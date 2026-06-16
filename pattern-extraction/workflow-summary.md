@@ -82,13 +82,13 @@
 ### 源文件（只读访问）
 | 项目 | 路径 | 说明 |
 |------|------|------|
-| **CSO-FORCS** | `/home/hys/projects/CSO-FORCS` | 待分析项目1 |
-| **WarehouseMS** | `/home/hys/projects/WarehouseMS` | 待分析项目2 |
+| **CSO-FORCS** | `../CSO-FORCS` | 待分析项目1 |
+| **WarehouseMS** | `../WarehouseMS` | 待分析项目2 |
 
 ### 输出位置（总结存放）
 | 目录 | 路径 | 用途 |
 |------|------|------|
-| **工作目录** | `/home/hys/projects/ai-dev-spec-framework` | 所有总结、分析、论文产出均存放于此 |
+| **工作目录** | `./`（本项目根目录） | 所有总结、分析、论文产出均存放于此 |
 
 ---
 

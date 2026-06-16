@@ -9,23 +9,19 @@
 ### 源项目访问（只读）
 
 ```
-/home/hys/projects/CSO-FORCS    # 项目1 - 只读
-/home/hys/projects/WarehouseMS  # 项目2 - 只读
+../CSO-FORCS    # 项目1 - 只读
+../WarehouseMS  # 项目2 - 只读
 ```
 
 **禁止**对这两个目录进行写入、删除、重命名或任何修改操作。仅允许读取。
 
 ### 输出位置
 
-所有产出物（总结、分析、论文）必须写入：
-```
-/home/hys/projects/ai-dev-spec-framework/
-```
+所有产出物（总结、分析、论文）必须写入本项目根目录（`./`）。
 
 ## 目录结构
 
 ```
-/home/hys/projects/ai-dev-spec-framework/
 ├── AGENTS.md                    # 项目配置（本文件）
 ├── plans/                       # 执行计划
 │   ├── 01-data-collection.md    # 数据收集计划
