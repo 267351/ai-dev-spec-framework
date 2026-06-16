@@ -1,0 +1,103 @@
+/* ============================================================
+   哈电集团品牌设计系统 — CSS 变量定义
+   版本: v1.1 | 日期: 2026-06-17
+   项目: 哈电重装库房管理系统 / 可复用于所有哈电关联项目
+   ============================================================ */
+
+:root {
+    /* ========================================
+       Color Palette — 哈电品牌色板
+       语义: 蓝 = 科技创新，红 = 激情与希望
+       铁律: 红仅作点缀（≤5% 面积），蓝主导
+       禁止: 橘色/粉色/紫色/霓虹色/高饱和糖果色
+       ======================================== */
+
+    /* Primary — 哈电蓝 */
+    --color-primary:         #15315A;
+    --color-primary-dark:    #0B1A30;
+    --color-primary-light:   #1E4D8C;
+
+    /* Accent — 哈电红（仅关键操作和强调） */
+    --color-accent:          #C41E3A;
+    --color-accent-dark:     #A01830;
+
+    /* Surface — 表面色 */
+    --color-surface:         #FFFFFF;
+    --color-background:      #F4F6F9;
+    --color-background-alt:  #E8ECF1;
+
+    /* Text — 文字 */
+    --color-text:            #1A1A2E;
+    --color-text-muted:      #5A6B7A;
+
+    /* Border */
+    --color-border:          #D5DBDB;
+
+    /* ========================================
+       Typography — 字体
+       铁律: 不引入 Web Font，使用系统 CJK 字体栈
+       ======================================== */
+    --font-family:           'Microsoft YaHei', 'PingFang SC', 'SimHei', sans-serif;
+    --letter-spacing-body:   0.04em;
+    --letter-spacing-heading: 0.10em;
+
+    /* ========================================
+       Spacing — 间距系统
+       ======================================== */
+    --space-xs:  0.25rem;  /* 4px  */
+    --space-sm:  0.5rem;   /* 8px  */
+    --space-md:  1rem;     /* 16px */
+    --space-lg:  1.5rem;   /* 24px */
+    --space-xl:  2rem;     /* 32px */
+    --space-2xl: 3rem;     /* 48px */
+    --space-3xl: 4rem;     /* 64px */
+
+    /* ========================================
+       Shadow — 阴影层级
+       ======================================== */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+    /* ========================================
+       Border Radius — 圆角
+       ======================================== */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+
+    /* ========================================
+       Animation — 动画
+       标准缓动: cubic-bezier(0.4, 0, 0.2, 1)
+       铁律: 必须尊重 prefers-reduced-motion
+       ======================================== */
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: 150ms;
+    --transition-normal: 200ms;
+    --transition-slow: 300ms;
+}
+
+/* 全局基础样式 */
+body {
+    font-family: var(--font-family);
+    letter-spacing: var(--letter-spacing-body);
+    color: var(--color-text);
+    background-color: var(--color-background);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family);
+    letter-spacing: var(--letter-spacing-heading);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+/* 尊重用户动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
