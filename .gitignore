@@ -10,5 +10,9 @@ Thumbs.db
 .omo/
 .sisyphus/
 
+# .NET
+bin/
+obj/
+
 # Node
 node_modules/
