@@ -1,13 +1,13 @@
-# Reusable Skills Index
+# 可复用 Skills 索引
 
-> 本目录包含从 CSO-FORCS 和 WarehouseMS 两个工业项目中提取的**可独立复用的 Skills**。
-> 每个 Skill 文件是独立的、自包含的——可以直接复制到其他项目的 Skill 系统中使用。
+> 从 CSO-FORCS 和 WarehouseMS 两个工业项目中提炼的**可独立复用 Skills**。
+> 每个 Skill 文件自包含——直接复制到其他项目的 Skill 系统中即可使用。
 
 ---
 
 ## 目录
 
-### 架构（Architecture）
+### 架构
 
 | Skill | 文件 | 适用场景 |
 |-------|------|----------|
@@ -15,24 +15,24 @@
 | 进程编排器（Launcher） | `architecture/process-orchestrator.md` | 3+ 服务进程需协调启动 |
 | 统一配置层 | `architecture/unified-configuration-layer.md` | .NET 项目配置管理 |
 
-### 编码（Coding）
+### 编码
+
+| Skill | 文件 | 适用场景 |
+|-------|------|----------|
+| 作业状态机 | `coding/state-machine.md` | 有状态业务流程的项目 |
+| 传感器偏差分级告警 | `coding/deviation-classification.md` | 传感器/测量数据验证 |
+| 系数快照模式 | `coding/coefficient-snapshot.md` | 历史数据需免疫配置变更 |
+| 策略模式驱动业务扩展 | `coding/strategy-pattern-business-rules.md` | 业务规则需按类型扩展 |
+| SignalR 自适应轮询 | `coding/signalr-adaptive-polling.md` | Blazor 实时数据推送 |
+
+### 工作流 / 治理
 
 | Skill | 文件 | 适用场景 |
 |-------|------|----------|
 | Bug 模式知识库 | `workflow/bug-pattern-knowledge-base.md` | 任何积累 Bug 的项目 |
-| 作业状态机 | `coding/state-machine.md` | 有状态业务流程的项目 |
-| 传感器偏差分级告警 | `coding/deviation-classification.md` | 传感器/测量数据验证 |
-| 系数快照模式 | `coding/coefficient-snapshot.md` | 历史数据需免疫配置变更 |
-| 策略模式业务扩展 | `coding/strategy-pattern-business-rules.md` | 业务规则需按类型扩展 |
-| SignalR 自适应轮询 | `coding/signalr-adaptive-polling.md` | Blazor 实时数据推送 |
+| 偏差检测系统 | `workflow/deviation-detection.md` | 使用 AGENTS.md + spec.md 体系的项目 |
 
-### 工作流/治理（Workflow）
-
-| Skill | 文件 | 适用场景 |
-|-------|------|----------|
-| 偏差检测系统 | `workflow/deviation-detection.md` | 使用 AGENTS.md + spec.md 的项目 |
-
-### 部署（Deployment）
+### 部署
 
 | Skill | 文件 | 适用场景 |
 |-------|------|----------|
@@ -55,10 +55,10 @@
 cp -r skills/reusable/coding/state-machine.md /path/to/project/.opencode/skills/state-machine/SKILL.md
 ```
 
-### 方式二：复制到 spec-tools 部署的项目
+### 方式二：复制到使用 spec-tools 的项目
 
 ```bash
-deploy.sh 会自动处理。手动：
+# deploy.sh 会自动处理。手动：
 cp skills/reusable/coding/state-machine.md /path/to/project/tools/skills/
 ```
 
@@ -75,8 +75,8 @@ cp skills/reusable/coding/state-machine.md /path/to/project/tools/skills/
 
 ## 如何添加新 Skill
 
-1. 选择对应的分类目录（architecture/coding/workflow/deployment/ui）
-2. 使用统一模板：`When to Use` → `Pattern` → `Implementation` → `Verification`
-3. 确保 **Dependencies** 字段准确标注依赖
-4. 确保 Skill 是**自包含的**——依赖外部工具/库必须在 Dependencies 中标注
-5. 更新本文件（INDEX.md）的目录表
+1. 选择合适的分类目录（architecture/coding/workflow/deployment/ui）
+2. 使用统一模板：`适用场景` → `模式` → `实现` → `验证清单`
+3. 在 **依赖** 字段准确标注外部依赖
+4. 确保 Skill **自包含**——依赖外部工具/库必须在"依赖"中说明
+5. 更新本索引文件

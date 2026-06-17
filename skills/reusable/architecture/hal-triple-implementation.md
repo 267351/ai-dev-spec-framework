@@ -1,36 +1,36 @@
-# HAL (Hardware Abstraction Layer) with Triple Implementation
+# HAL 硬件抽象层 + 三实现模式
 
-> **Category**: Architecture  
-> **Reusable**: ✅ Yes — copy this file to any project with hardware/sensor dependencies  
-> **Dependencies**: None (pure design pattern)
-
----
-
-## When to Use
-
-Your project interacts with physical hardware (sensors, card readers, cameras, printers) and you need to:
-- Develop and test without real hardware
-- Switch between mock and real implementations via config
-- Gracefully degrade when hardware is unavailable
+> **分类**: 架构  
+> **可复用**: ✅ 是 — 复制到任何有硬件/传感器依赖的项目  
+> **依赖**: 无（纯设计模式）
 
 ---
 
-## Pattern
+## 适用场景
 
-For every hardware interface, provide **three implementations**:
+项目涉及物理硬件（传感器、读卡器、摄像头、打印机），需要：
+- 不依赖真实硬件即可开发和测试
+- 通过配置在 Mock 和生产实现之间切换
+- 硬件不可用时优雅降级
+
+---
+
+## 模式
+
+每个硬件接口提供**三种实现**：
 
 ```
-Hardware Interface (e.g. ICardReader)
-├── Mock Implementation     ← for dev/test (configurable behavior)
-├── Real Implementation     ← for production (real hardware)
-└── Disabled Implementation ← for graceful degradation (hardware absent)
+硬件接口（如 ICardReader）
+├── Mock 实现     ← 开发/测试用（可配行为）
+├── Real 实现     ← 生产环境（真实硬件）
+└── Disabled 实现 ← 优雅降级（硬件缺失时）
 ```
 
 ---
 
-## Implementation
+## 实现
 
-### Step 1: Define the interface
+### 第1步：定义接口
 
 ```csharp
 // src/Project.HAL/Interfaces/ICardReader.cs
@@ -43,10 +43,10 @@ public interface ICardReader
 public record CardReadResult(string Uid, bool Success, string Error);
 ```
 
-### Step 2: Create three implementations
+### 第2步：创建三种实现
 
 ```csharp
-// Mock — configurable for tests
+// Mock —— 可配置行为，用于测试
 public class MockCardReader : ICardReader
 {
     private readonly string _mockUid;
@@ -57,37 +57,37 @@ public class MockCardReader : ICardReader
         => Task.FromResult(new CardReadResult(_mockUid, true, null));
 }
 
-// Real — wraps actual hardware
+// Real —— 封装真实硬件访问
 public class RealCardReader : ICardReader, IDisposable
 {
     private IntPtr _deviceHandle;
 
     public async Task<bool> IsAvailableAsync()
     {
-        // P/Invoke or hardware SDK call
+        // P/Invoke 或硬件 SDK 调用
     }
 
     public async Task<CardReadResult> ReadCardAsync(CancellationToken ct)
     {
-        // Blocking hardware access with SemaphoreSlim
+        // 使用 SemaphoreSlim 序列化硬件访问
     }
 
-    public void Dispose() { /* release handle */ }
+    public void Dispose() { /* 释放句柄 */ }
 }
 
-// Disabled — graceful fallback
+// Disabled —— 硬件不可用时的降级
 public class DisabledCardReader : ICardReader
 {
     public Task<bool> IsAvailableAsync() => Task.FromResult(false);
     public Task<CardReadResult> ReadCardAsync(CancellationToken ct)
-        => Task.FromResult(new CardReadResult(null, false, "Card reader disabled"));
+        => Task.FromResult(new CardReadResult(null, false, "读卡器已禁用"));
 }
 ```
 
-### Step 3: Configuration-driven registration
+### 第3步：配置驱动的注册
 
 ```csharp
-// DI registration
+// DI 注册
 services.AddSingleton<ICardReader>(sp =>
 {
     var config = sp.GetRequiredService<IOptions<HardwareOptions>>();
@@ -100,25 +100,25 @@ services.AddSingleton<ICardReader>(sp =>
 });
 ```
 
-### Step 4: Maintain implementation status matrix
+### 第4步：维护实现状态矩阵
 
-Keep a table in your architecture doc:
+在架构文档中维护表格：
 
 ```
-| Hardware      | Interface      | Mock | Real | Disabled | Status    |
-|---------------|----------------|------|------|----------|-----------|
-| Card Reader   | ICardReader    | ✅   | ✅   | ✅       | Complete  |
-| Weight Sensor | IWeightSensor  | ✅   | ⬜   | ⬜       | Mock only |
+| 硬件       | 接口            | Mock | Real | Disabled | 状态       |
+|------------|-----------------|------|------|----------|------------|
+| 读卡器     | ICardReader     | ✅   | ✅   | ✅       | 已完成     |
+| 重量传感器 | IWeightSensor   | ✅   | ⬜   | ⬜       | 仅 Mock    |
 ```
 
-**Rule**: Never delete a Mock implementation without checking the matrix — deleting a Mock when no Real exists causes DI crash.
+**铁律**：删除 Mock 前必须查看矩阵——Real 未就绪时删掉 Mock 会导致 DI 启动崩溃。
 
 ---
 
-## Verification
+## 验证清单
 
-- [ ] Each hardware interface has ≥2 implementations
-- [ ] Mock can be configured via constructor params or callbacks
-- [ ] Disabled returns "unavailable" (not exception)
-- [ ] Implementation matrix is maintained
-- [ ] Switching implementations only requires config change
+- [ ] 每个硬件接口有 ≥2 个实现
+- [ ] Mock 可通过构造函数参数或回调配置行为
+- [ ] Disabled 返回"不可用"（不抛异常）
+- [ ] 维护实现状态矩阵
+- [ ] 切换实现仅需修改配置，不改代码

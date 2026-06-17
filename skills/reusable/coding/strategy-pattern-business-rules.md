@@ -1,35 +1,35 @@
-# Strategy Pattern for Business Rules
+# 策略模式驱动业务扩展
 
-> **Category**: Coding  
-> **Reusable**: ✅ Yes — copy to any project where business rules must be extensible without code changes  
-> **Dependencies**: None (Gang of Four pattern, applied for AI-assisted development)
-
----
-
-## When to Use
-
-- Business rules depend on entity type (different calculation for different product types)
-- New entity types should be addable via config + new class, without modifying existing code
-- AI assistants frequently need to add new types without breaking existing ones
+> **分类**: 编码  
+> **可复用**: ✅ 是 — 复制到任何需按类型扩展业务规则的项目  
+> **依赖**: 无（GoF 经典模式，针对 AI 辅助开发场景优化）
 
 ---
 
-## Pattern
+## 适用场景
+
+- 业务规则依赖实体类型（不同产品类型有不同的计算方式）
+- 新增类型应通过配置 + 新类完成，不改现有代码
+- AI 助手频繁需要添加新类型，但不能破坏已有逻辑
+
+---
+
+## 模式
 
 ```
-IMaterialConsumptionStrategy          ← Strategy interface
-├── StandardConsumptionStrategy       ← Strategy for type A
-├── AbrasiveConsumptionStrategy       ← Strategy for type B
-└── CustomConsumptionStrategy         ← Strategy for new type (add without touching existing code)
+ICalculationStrategy              ← 策略接口
+├── StandardCalculationStrategy   ← 类型 A 的策略
+├── AbrasiveCalculationStrategy   ← 类型 B 的策略
+└── CustomCalculationStrategy     ← 新类型的策略（新增，不动已有代码）
 
-IMaterialConsumptionStrategyFactory   ← Factory: selects strategy by type
+CalculationStrategyFactory        ← 工厂：根据类型选择策略
 ```
 
 ---
 
-## Implementation
+## 实现
 
-### Step 1: Strategy Interface
+### 第1步：策略接口
 
 ```csharp
 public interface ICalculationStrategy
@@ -40,7 +40,7 @@ public interface ICalculationStrategy
 }
 ```
 
-### Step 2: Strategy Factory
+### 第2步：策略工厂
 
 ```csharp
 public class CalculationStrategyFactory
@@ -54,23 +54,23 @@ public class CalculationStrategyFactory
     {
         var strategy = _strategies.FirstOrDefault(s => s.CanHandle(businessType));
         if (strategy == null)
-            throw new NotSupportedException($"No strategy for type: {businessType}");
+            throw new NotSupportedException($"未找到类型 {businessType} 的策略");
         return strategy;
     }
 }
 ```
 
-### Step 3: DI Registration
+### 第3步：DI 注册
 
 ```csharp
-// All strategies auto-discovered via DI
+// 所有策略通过 DI 自动发现
 services.AddScoped<ICalculationStrategy, StandardCalculationStrategy>();
 services.AddScoped<ICalculationStrategy, AbrasiveCalculationStrategy>();
 services.AddScoped<ICalculationStrategy, CustomCalculationStrategy>();
 services.AddScoped<CalculationStrategyFactory>();
 ```
 
-### Step 4: Usage in Service
+### 第4步：Service 中使用
 
 ```csharp
 public class CalculationService
@@ -90,26 +90,26 @@ public class CalculationService
 
 ---
 
-## Adding a New Type (3 steps, 0 existing code changes)
+## 新增类型只需 3 步（0 处现有代码修改）
 
-1. Create new class implementing `ICalculationStrategy`
-2. Register in DI: `services.AddScoped<ICalculationStrategy, NewTypeStrategy>()`
-3. That's it. Factory auto-discovers it.
-
----
-
-## Why This Helps AI-Assisted Development
-
-- **AI can add new strategies** without understanding existing ones — just implement the interface
-- **Factory pattern is AI-friendly**: clear contract, no ambiguity
-- **Reduces merge conflicts**: new strategies are new files, not edits to existing ones
+1. 新建类实现 `ICalculationStrategy`
+2. DI 注册: `services.AddScoped<ICalculationStrategy, NewTypeStrategy>()`
+3. 完成。工厂自动发现。
 
 ---
 
-## Verification
+## 为什么对 AI 辅助开发友好
 
-- [ ] Strategy interface has `CanHandle(type)` predicate
-- [ ] Factory uses DI to auto-discover all strategies
-- [ ] Adding new type = new class + DI registration (no existing code modified)
-- [ ] Strategy selection by type, not by if/else chain
-- [ ] Unknown type throws clear error (not null reference)
+- **AI 可独立添加新策略**——只需实现接口，无需理解已有策略
+- **工厂模式对 AI 友好**——契约明确，无歧义
+- **减少合并冲突**——新策略是新文件，不改已有文件
+
+---
+
+## 验证清单
+
+- [ ] 策略接口有 `CanHandle(type)` 谓词
+- [ ] 工厂通过 DI 自动发现所有策略
+- [ ] 新增类型 = 新类 + DI 注册（不修改已有代码）
+- [ ] 按类型选择策略，而非 if/else 链
+- [ ] 未知类型抛明确异常（非空引用）

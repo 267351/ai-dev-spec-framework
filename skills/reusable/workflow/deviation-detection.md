@@ -1,66 +1,64 @@
-# Deviation Detection System
+# 偏差检测系统
 
-> **Category**: Workflow / Governance  
-> **Reusable**: ✅ Yes — for any project using AGENTS.md + spec.md  
-> **Dependencies**: AGENTS.md file, spec.md files
-
----
-
-## When to Use
-
-Your project uses AGENTS.md and spec.md files. Over time, code and docs diverge — code evolves but AGENTS.md gets stale. You need AI to detect AND report this automatically, without waiting for a human to notice.
+> **分类**: 工作流 / 治理  
+> **可复用**: ✅ 是 — 适用于使用 AGENTS.md + spec.md 体系的项目  
+> **依赖**: AGENTS.md 文件, spec.md 文件
 
 ---
 
-## Deviation Types (三级偏差)
+## 适用场景
 
-### 🔴 Hard Deviation (硬偏差)
-Code violates an AGENTS.md/spec.md ironclad rule → build or runtime known to fail.
-
-| Example | AGENTS.md says | Code does |
-|---------|---------------|-----------|
-| Dependency violation | "Web is forbidden to reference Infrastructure" | Web.csproj has `<ProjectReference Include="../Infrastructure">` |
-
-**Action**: AI MUST stop and report. Cannot proceed without fixing.
-
-### 🟡 Soft Deviation (软偏差)
-Code implementation is actually correct/better than what AGENTS.md describes.
-
-| Example | AGENTS.md says | Code does |
-|---------|---------------|-----------|
-| Deployment | "Use deploy.sh" | `deploy.ps1` for Windows support → actually an improvement |
-
-**Action**: AI suggests updating AGENTS.md to match current better practice.
-
-### 🟢 Evolution Deviation (演进偏差)
-Technology has evolved; old rules are suboptimal but not wrong.
-
-| Example | AGENTS.md says | Code/Reality |
-|---------|---------------|--------------|
-| .NET version | ".NET 9" | Project uses .NET 10 → should update reference |
-
-**Action**: AI notes this for team discussion. Optional update.
+项目使用 AGENTS.md 和 spec.md 文件。随着时间推移，代码与文档必然产生偏差——代码演进但 AGENTS.md 未更新。需要 AI 自动检测并报告这种偏差，不等人类发现。
 
 ---
 
-## AI Behavior Rules
+## 偏差类型（三级偏差）
+
+### 🔴 硬偏差
+代码违反 AGENTS.md/spec.md 中的铁律 → 已知会导致构建或运行时失败。
+
+| 示例 | AGENTS.md 规定 | 代码实际 |
+|------|---------------|----------|
+| 依赖违规 | "禁止 Web 引用 Infrastructure" | Web.csproj 有 `<ProjectReference Include="../Infrastructure">` |
+
+**处理**: AI 必须立即停止并报告。未修复前不可继续。
+
+### 🟡 软偏差
+代码实现实际上正确/优于 AGENTS.md 的描述。
+
+| 示例 | AGENTS.md 规定 | 代码实际 |
+|------|---------------|----------|
+| 部署方式 | "使用 deploy.sh" | 新增了 deploy.ps1 支持 Windows → 实际是改进 |
+
+**处理**: AI 建议更新 AGENTS.md 以匹配当前更好的实践。
+
+### 🟢 演进偏差
+技术已更新；旧规则虽不错误但已非最优。
+
+| 示例 | AGENTS.md 规定 | 实际 |
+|------|---------------|------|
+| .NET 版本 | ".NET 9" | 项目已用 .NET 10 → 应更新版本引用 |
+
+**处理**: AI 标记待团队讨论。可选更新。
+
+---
+
+## AI 行为规则
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Every task start:                                        │
-│  1. Load AGENTS.md + 架构总纲 + relevant *.spec.md       │
-│  2. Compare against current code state                    │
-│  3. If deviation found: STOP and report                   │
-│  4. Output confirmation line:                             │
-│     "已加载：AGENTS.md + 架构总纲 + X.spec.md"            │
+│  每次任务开始:                                            │
+│  1. 加载 AGENTS.md + 架构总纲 + 相关 *.spec.md          │
+│  2. 与当前代码状态对比                                    │
+│  3. 如发现偏差: 立即停止并报告                            │
+│  4. 输出确认行:                                          │
+│     "已加载：AGENTS.md + 架构总纲 + X.spec.md"           │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## AGENTS.md Rule Injection
-
-Add these rules to your AGENTS.md:
+## AGENTS.md 中应注入的规则
 
 ```markdown
 ## 偏差检测规则
@@ -76,10 +74,10 @@ Add these rules to your AGENTS.md:
 
 ---
 
-## Verification
+## 验证清单
 
-- [ ] AGENTS.md contains deviation detection rules
-- [ ] AI outputs "已加载" line at task start
-- [ ] Deviations are reported per-item (not batched)
-- [ ] Hard deviations block progress
-- [ ] Team has a regular (quarterly) deviation review process
+- [ ] AGENTS.md 中包含偏差检测规则
+- [ ] AI 任务开始时输出"已加载"确认行
+- [ ] 偏差逐条报告（不批量）
+- [ ] 硬偏差阻断操作
+- [ ] 团队有定期（季度）偏差审查制度

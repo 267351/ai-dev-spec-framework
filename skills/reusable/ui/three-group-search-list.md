@@ -1,22 +1,22 @@
-# 3-Group Search List Pattern
+# 三组搜索列表模式
 
-> **Category**: UI / Coding  
-> **Reusable**: ✅ Yes — copy to any Blazor/Web project with searchable list pages  
-> **Dependencies**: Blazor (concept applies to any frontend framework)
-
----
-
-## When to Use
-
-Your list page needs search/filter with these characteristics:
-- 2-3 search fields with AND logic
-- Real-time filtering (type-to-search, no "Search" button)
-- Client-side filtering (no re-request to API)
-- Works with pagination
+> **分类**: UI / 编码  
+> **可复用**: ✅ 是 — 复制到任何有搜索列表页的 Blazor/Web 项目  
+> **依赖**: Blazor（概念适用于任何前端框架）
 
 ---
 
-## Pattern
+## 适用场景
+
+列表页需要搜索/过滤，要求：
+- 2-3 个搜索框，AND 逻辑组合
+- 实时过滤（输入即搜，无需点"搜索"按钮）
+- 客户端过滤（不重新请求 API）
+- 配合分页
+
+---
+
+## 模式
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -24,8 +24,8 @@ Your list page needs search/filter with these characteristics:
 │  [姓名______]     [工号______]     [部门______]           │
 │                                                           │
 │  ┌──────────────────────────────────────────────────┐    │
-│  │  Result List (filtered in-memory)                 │    │
-│  │  - matching results...                            │    │
+│  │  结果列表（内存过滤）                              │    │
+│  │  - 匹配的结果...                                  │    │
 │  └──────────────────────────────────────────────────┘    │
 │  [<<] [1] [2] [3] [>>]                                   │
 └──────────────────────────────────────────────────────────┘
@@ -33,10 +33,10 @@ Your list page needs search/filter with these characteristics:
 
 ---
 
-## Implementation (Blazor)
+## 实现（Blazor）
 
 ```razor
-@* Search fields — @bind:event="oninput" enables real-time *@
+@* 搜索框 —— @bind:event="oninput" 实现实时搜索 *@
 <MudTextField @bind-Value="_searchName" 
               @bind:event="oninput"
               Label="姓名" 
@@ -52,7 +52,7 @@ Your list page needs search/filter with these characteristics:
               Label="部门" 
               Immediate="true" />
 
-@* Filtered list *@
+@* 过滤后的列表 *@
 @foreach (var item in FilteredItems)
 {
     <MudTr>
@@ -64,9 +64,11 @@ Your list page needs search/filter with these characteristics:
 ```
 
 ```csharp
-// Code-behind
+// 代码后置
 private List<Person> _allItems = new();
 private string _searchName = "", _searchCode = "", _searchDept = "";
+private int _currentPage = 1;
+private const int _pageSize = 20;
 
 private IEnumerable<Person> FilteredItems => _allItems
     .Where(p => string.IsNullOrEmpty(_searchName) || p.Name.Contains(_searchName))
@@ -75,31 +77,30 @@ private IEnumerable<Person> FilteredItems => _allItems
     .Skip((_currentPage - 1) * _pageSize)
     .Take(_pageSize);
 
-// Setter triggers filter refresh
-private string SearchName
+// 搜索值变更时重置到第1页
+private void OnSearchChanged()
 {
-    get => _searchName;
-    set { _searchName = value; _currentPage = 1; /* reset to page 1 on search */ }
+    _currentPage = 1;
 }
 ```
 
 ---
 
-## Key Design Decisions
+## 关键设计决策
 
-1. **`@bind:event="oninput"`** — filter on every keystroke (not on blur)
-2. **AND logic** — all non-empty search terms must match
-3. **Memory filtering** — filter already-loaded data, don't re-request API
-4. **Reset to page 1** — on any search term change
-5. **Empty = wildcard** — empty search field matches everything
+1. **`@bind:event="oninput"`** — 每次按键触发过滤（非失焦时）
+2. **AND 逻辑** — 所有非空搜索条件必须同时满足
+3. **内存过滤** — 过滤已加载的数据，不重新请求 API
+4. **搜索时回到第 1 页** — 任何搜索条件变更时重置分页
+5. **空 = 通配** — 空搜索框匹配所有数据
 
 ---
 
-## Verification
+## 验证清单
 
-- [ ] Search fields use oninput for real-time filtering
-- [ ] Multiple fields combine with AND logic
-- [ ] Filtering is client-side (in memory)
-- [ ] Pagination resets on search change
-- [ ] Empty search field = match all
-- [ ] Performance acceptable with 1000+ items (consider virtualization if needed)
+- [ ] 搜索框使用 oninput 实现实时过滤
+- [ ] 多个搜索框 AND 组合
+- [ ] 过滤在客户端内存中完成
+- [ ] 搜索变更时分页重置
+- [ ] 空搜索框 = 匹配全部
+- [ ] 1000+ 数据量下性能可接受（必要时考虑虚拟化）

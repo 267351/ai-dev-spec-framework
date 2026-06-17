@@ -1,39 +1,39 @@
-# Unified Configuration Layer
+# 统一配置层
 
-> **Category**: Architecture  
-> **Reusable**: ✅ Yes — copy to any .NET project with many configuration options  
-> **Dependencies**: .NET Options pattern, Microsoft.Extensions.Options
-
----
-
-## When to Use
-
-Your project has 5+ `appsettings.json` sections and Options classes scattered across projects. You want:
-- Single-method registration for all config
-- Strong-typed Options (never read raw `IConfiguration` in services)
-- Configuration project at the bottom of the dependency chain
+> **分类**: 架构  
+> **可复用**: ✅ 是 — 复制到配置项较多的 .NET 项目  
+> **依赖**: .NET Options 模式, Microsoft.Extensions.Options
 
 ---
 
-## Pattern
+## 适用场景
+
+项目有 5 个以上 `appsettings.json` 配置段，Options 类分散在各项目中。期望：
+- 一行方法注册所有配置
+- 强类型 Options（不在 Service 中直接读 `IConfiguration`）
+- Configuration 项目位于依赖链最底层
+
+---
+
+## 模式
 
 ```
-Project.Configuration (depends on: nothing)
+Project.Configuration（不引用任何其他项目）
 ├── Options/
 │   ├── ApiOptions.cs         (ApiUrl, Timeout)
 │   ├── DbOptions.cs          (ConnectionString, Provider)
 │   ├── LogOptions.cs         (LogPath, LogLevel)
 │   └── FeatureOptions.cs
 └── Extensions/
-    ├── ServiceCollectionExtensions.cs   ← ONE method for all config
-    └── HostExtensions.cs                ← ONE method for all logging
+    ├── ServiceCollectionExtensions.cs   ← 一个方法注册所有配置
+    └── HostExtensions.cs                ← 一个方法配置所有日志
 ```
 
 ---
 
-## Implementation
+## 实现
 
-### Step 1: Options classes (in Configuration project)
+### 第1步：Options 类（放在 Configuration 项目中）
 
 ```csharp
 // Options/ApiOptions.cs
@@ -41,7 +41,6 @@ public class ApiOptions
 {
     public const string SectionName = "Api";
     public string MainApiUrl { get; set; } = "http://localhost:5005";
-    public string WarehouseApiUrl { get; set; } = "http://localhost:5100";
     public int TimeoutSeconds { get; set; } = 30;
 }
 
@@ -54,7 +53,7 @@ public class DbOptions
 }
 ```
 
-### Step 2: Single registration method
+### 第2步：一招注册所有配置
 
 ```csharp
 // Extensions/ServiceCollectionExtensions.cs
@@ -62,11 +61,11 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddAppConfiguration(this IServiceCollection services, IConfiguration config)
     {
-        // All Options in one place
+        // 所有 Options 集中注册
         services.Configure<ApiOptions>(config.GetSection(ApiOptions.SectionName));
         services.Configure<DbOptions>(config.GetSection(DbOptions.SectionName));
 
-        // Named HttpClients with Options binding
+        // 命名的 HttpClient，绑定 Options
         services.AddHttpClient("MainApi", (sp, client) =>
         {
             var opts = sp.GetRequiredService<IOptions<ApiOptions>>().Value;
@@ -79,7 +78,7 @@ public static class ServiceCollectionExtensions
 }
 ```
 
-### Step 3: Single logging method
+### 第3步：一招配置所有日志
 
 ```csharp
 // Extensions/HostExtensions.cs
@@ -90,7 +89,7 @@ public static class HostExtensions
         return host.UseSerilog((ctx, config) =>
         {
             config
-                .ReadFrom.Configuration(ctx.Configuration)  // appsettings.json
+                .ReadFrom.Configuration(ctx.Configuration)
                 .WriteTo.Console()
                 .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day);
         });
@@ -98,33 +97,33 @@ public static class HostExtensions
 }
 ```
 
-### Step 4: Usage in Program.cs
+### 第4步：Program.cs 中一行搞定
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-// ONE line for all config
+// 一行注册所有配置
 builder.Services.AddAppConfiguration(builder.Configuration);
 
-// ONE line for logging
+// 一行配置日志
 builder.Host.UseAppLogging();
 ```
 
 ---
 
-## Rules
+## 铁律
 
-1. **Configuration project NEVER references other projects** — it sits at the bottom
-2. **Services NEVER read `IConfiguration` directly** — always inject `IOptions<T>`
-3. **Options classes use `const string SectionName`** for consistency
-4. **New Options are registered in the single `AddAppConfiguration` method** — no scattered registrations
+1. **Configuration 项目绝对不引用其他项目**——它位于依赖链最底层
+2. **Service 中绝不直接读 `IConfiguration`**——始终注入 `IOptions<T>`
+3. **Options 类使用 `const string SectionName`** 保证一致性
+4. **新增 Options 只在唯一的 `AddAppConfiguration` 方法中注册**——不允许散落各处
 
 ---
 
-## Verification
+## 验证清单
 
-- [ ] Configuration project has zero project references
-- [ ] All Options classes in one project
-- [ ] One extension method registers all config
-- [ ] No `IConfiguration["key"]` or `builder.Configuration.GetValue<>()` in services
-- [ ] Adding new Options only requires modifying the Options class + one line in `AddAppConfiguration`
+- [ ] Configuration 项目的项目引用数为零
+- [ ] 所有 Options 类集中在一个项目中
+- [ ] 一个扩展方法注册全部配置
+- [ ] Service 中不存在 `IConfiguration["key"]` 或 `builder.Configuration.GetValue<>()`
+- [ ] 新增 Options 只需：新建 Options 类 + 在 `AddAppConfiguration` 中加一行

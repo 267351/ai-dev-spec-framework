@@ -1,35 +1,35 @@
-# SignalR Adaptive Polling + Reconnection
+# SignalR 自适应轮询 + 重连机制
 
-> **Category**: Coding / Real-time  
-> **Reusable**: ✅ Yes — copy to any Blazor project needing real-time updates  
-> **Dependencies**: Microsoft.AspNetCore.SignalR.Client
-
----
-
-## When to Use
-
-Your Blazor (or .NET) app needs real-time server→client data push with:
-- Adaptive polling interval (faster when active, slower when idle)
-- Reconnection with pending message flush
-- Multiple message type support
+> **分类**: 编码 / 实时通信  
+> **可复用**: ✅ 是 — 复制到任何需要实时数据推送的 Blazor 项目  
+> **依赖**: Microsoft.AspNetCore.SignalR.Client
 
 ---
 
-## Server Side (Background Service + Hub)
+## 适用场景
+
+Blazor（或 .NET）应用需要服务端→客户端实时数据推送，且要求：
+- 轮询间隔自适应（活跃时快、空闲时慢）
+- 断线自动重连，重连后刷新待处理消息
+- 支持多种消息类型
+
+---
+
+## 服务端（后台服务 + Hub）
 
 ```csharp
 // Hub
 public class MonitoringHub : Hub
 {
-    // Clients connect and receive broadcasts
+    // 客户端连接后接收广播
 }
 
-// Background service — broadcasts data on adaptive interval
+// 后台服务 —— 自适应间隔广播数据
 public class MonitoringBroadcastService : BackgroundService
 {
     private readonly IHubContext<MonitoringHub> _hub;
-    private const int ActiveIntervalMs = 30_000;   // 30s when sessions active
-    private const int IdleIntervalMs = 60_000;     // 60s when idle
+    private const int ActiveIntervalMs = 30_000;   // 有活跃会话时 30s
+    private const int IdleIntervalMs = 60_000;     // 空闲时 60s
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
@@ -47,7 +47,7 @@ public class MonitoringBroadcastService : BackgroundService
 
 ---
 
-## Client Side (SignalR Service)
+## 客户端（SignalR Service）
 
 ```csharp
 public class SignalRService : IAsyncDisposable
@@ -65,11 +65,11 @@ public class SignalRService : IAsyncDisposable
             .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10) })
             .Build();
 
-        // Register all handlers
+        // 注册消息处理器
         _connection.On<object>("UpdateActiveSessions", data =>
             InvokeHandlersAsync("UpdateActiveSessions", data));
 
-        // Reconnect: flush pending actions
+        // 重连：刷新待处理消息
         _connection.Reconnected += async (_) =>
         {
             ConnectionStateChanged?.Invoke(true);
@@ -87,8 +87,13 @@ public class SignalRService : IAsyncDisposable
         await _connection.StartAsync();
     }
 
+    // 注册重连后需执行的操作
     public void OnReconnect(Action action)
         => _pendingOnReconnect.Add(action);
+
+    // 发送跨屏指令
+    public async Task SendCameraCommandAsync(string command, Guid sessionId)
+        => await _connection.SendAsync("CameraCommand", new { Command = command, SessionId = sessionId });
 
     public async ValueTask DisposeAsync()
     {
@@ -100,34 +105,34 @@ public class SignalRService : IAsyncDisposable
 
 ---
 
-## Usage Example: Cross-Screen Coordination
+## 使用示例：跨屏协调
 
 ```csharp
-// A-Screen: when user logs in, tell B-Screen to take photos
-await SignalR.SendAsync("CameraCommand", new { Command = "CaptureEntryPhotos", SessionId });
+// A 屏：用户登录后，通知 B 屏拍照
+await SignalR.SendCameraCommandAsync("CaptureEntryPhotos", sessionId);
 
-// B-Screen: receives command, takes photos
+// B 屏：收到拍照指令
 SignalR.On<CameraCommand>("CameraCommand", cmd =>
 {
     if (cmd.Command == "CaptureEntryPhotos")
         _cameraService.Capture(cmd.SessionId);
 });
 
-// On reconnect, retry pending QR scan commands
+// 断线重连后重试未完成的扫码指令
 SignalR.OnReconnect(() =>
 {
     if (_pendingQrScan != null)
-        SignalR.SendAsync("CameraCommand", _pendingQrScan);
+        SignalR.SendCameraCommandAsync("QRScanStarted", _pendingQrScan.SessionId);
 });
 ```
 
 ---
 
-## Verification
+## 验证清单
 
-- [ ] Background service uses adaptive interval (active/idle)
-- [ ] Client auto-reconnects with exponential backoff
-- [ ] Pending messages flushed on reconnect
-- [ ] Multiple handler registration supported
-- [ ] Connection state changes trigger UI update
-- [ ] Graceful disposal on component/page teardown
+- [ ] 后台服务使用自适应间隔（活跃/空闲）
+- [ ] 客户端自动重连（指数退避）
+- [ ] 重连后刷新待处理消息
+- [ ] 支持注册多种消息处理器
+- [ ] 连接状态变更触发 UI 更新
+- [ ] 组件/页面销毁时优雅释放连接

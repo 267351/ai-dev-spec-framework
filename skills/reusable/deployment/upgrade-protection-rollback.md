@@ -1,38 +1,38 @@
-# Upgrade Protection & Rollback (Local Deployment)
+# 升级保护与回滚（本地部署）
 
-> **Category**: Deployment  
-> **Reusable**: ✅ Yes — copy to any on-premise / local-deploy project  
-> **Dependencies**: Bash or PowerShell
-
----
-
-## When to Use
-
-Your application is deployed locally (not containerized) and needs:
-- In-place upgrades without full reinstall
-- Data preservation across versions
-- Rollback capability if upgrade fails
-- Version tracking
+> **分类**: 部署  
+> **可复用**: ✅ 是 — 复制到任何本地部署/现场部署项目  
+> **依赖**: Bash 或 PowerShell
 
 ---
 
-## Pattern
+## 适用场景
+
+应用以本地方式部署（非容器化），需要：
+- 原地升级而非完整重装
+- 升级时保留数据
+- 升级失败可回滚
+- 版本可追溯
+
+---
+
+## 模式
 
 ```
 upgrade.sh / upgrade.ps1
-  ├── Step 1: Detect existing installation
-  ├── Step 2: Backup current binaries + config
-  ├── Step 3: User chooses data handling (keep/clear/merge)
-  ├── Step 4: Extract new version
-  ├── Step 5: Merge configuration (preserve user settings)
-  ├── Step 6: Run migration / seed
-  ├── Step 7: Write version file
-  └── On failure: Restore from backup
+  ├── 第1步: 检测已有安装
+  ├── 第2步: 备份当前二进制 + 配置
+  ├── 第3步: 用户选择数据处理方式（保留/清理/合并）
+  ├── 第4步: 解压新版本
+  ├── 第5步: 合并配置（保留用户本地设置）
+  ├── 第6步: 运行迁移/种子数据
+  ├── 第7步: 写入版本文件
+  └── 失败时: 从备份恢复
 ```
 
 ---
 
-## Implementation (Bash)
+## 实现（Bash）
 
 ```bash
 #!/bin/bash
@@ -43,32 +43,32 @@ BACKUP_DIR="./backup_$(date +%Y%m%d_%H%M%S)"
 VERSION_FILE="$DEPLOY_DIR/.version"
 NEW_VERSION="$1"
 
-# Step 1: Detect
+# 第1步: 检测
 if [ ! -d "$DEPLOY_DIR" ]; then
-    echo "No existing installation found. Run deploy.sh first."
+    echo "未找到已有安装。请先运行 deploy.sh。"
     exit 1
 fi
 
-# Step 2: Backup
-echo "Backing up to $BACKUP_DIR..."
+# 第2步: 备份
+echo "正在备份到 $BACKUP_DIR ..."
 cp -r "$DEPLOY_DIR" "$BACKUP_DIR"
 
-# Step 3: Data handling
-echo "Data directories:"
+# 第3步: 数据处理
+echo "数据目录:"
 ls -d "$DEPLOY_DIR/data" "$DEPLOY_DIR/logs" 2>/dev/null
-read -p "Keep (k) / Clear (c) / Merge (m)? " choice
+read -p "保留(k) / 清理(c) / 合并(m)? " choice
 
-# Step 4: Extract new version
-echo "Extracting new version..."
-# Copy new binaries over old ones
+# 第4步: 解压新版本
+echo "正在解压新版本..."
+# 将新二进制覆盖到部署目录
 
-# Step 5: Merge appsettings
-# Preserve user's local settings
+# 第5步: 合并配置
+# 保留用户的本地配置
 if [ -f "$BACKUP_DIR/appsettings.Local.json" ]; then
     cp "$BACKUP_DIR/appsettings.Local.json" "$DEPLOY_DIR/"
 fi
 
-# Step 7: Write version
+# 第7步: 写入版本
 cat > "$VERSION_FILE" << EOF
 {
   "version": "$NEW_VERSION",
@@ -77,13 +77,13 @@ cat > "$VERSION_FILE" << EOF
 }
 EOF
 
-echo "Upgrade complete. Backup at: $BACKUP_DIR"
-echo "To rollback: cp -r $BACKUP_DIR/* $DEPLOY_DIR/"
+echo "升级完成。备份位于: $BACKUP_DIR"
+echo "如需回滚: cp -r $BACKUP_DIR/* $DEPLOY_DIR/"
 ```
 
 ---
 
-## Version File Format
+## 版本文件格式
 
 ```json
 {
@@ -95,11 +95,11 @@ echo "To rollback: cp -r $BACKUP_DIR/* $DEPLOY_DIR/"
 
 ---
 
-## Verificatio
+## 验证清单
 
-- [ ] Upgrade creates backup before touching existing files
-- [ ] User can choose data handling (keep/clear)
-- [ ] User config (appsettings.Local.json) preserved
-- [ ] Rollback path is documented and tested
-- [ ] Version file updated with install + upgrade timestamps
-- [ ] Failed upgrade leaves system in recoverable state
+- [ ] 升级前创建完整备份
+- [ ] 用户可选择数据保留/清理
+- [ ] 用户配置（appsettings.Local.json）被保留
+- [ ] 回滚路径文档化且经过测试
+- [ ] 版本文件记录安装时间 + 升级时间
+- [ ] 升级失败后系统处于可恢复状态

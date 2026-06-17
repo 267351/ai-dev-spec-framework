@@ -1,48 +1,48 @@
-# Process Orchestrator (Launcher)
+# 进程编排器（Launcher）
 
-> **Category**: Architecture / Deployment  
-> **Reusable**: ✅ Yes — copy to any project with 3+ service processes  
-> **Dependencies**: .NET, HTTP health checks
+> **分类**: 架构 / 部署  
+> **可复用**: ✅ 是 — 复制到有 3 个以上服务进程的项目  
+> **依赖**: .NET, HTTP 健康检查
 
 ---
 
-## When to Use
+## 适用场景
 
-Your project has 3+ service processes (API, Web, microservices) that need coordinated startup, health monitoring, and crash recovery. Typical scenarios:
+项目有 3 个以上服务进程（API、Web、微服务），需要协调启动、健康监控、崩溃恢复。典型场景：
 - Blazor SSR + REST API + SignalR Hub
-- Microservice suite on single machine
-- On-premise deployment without container orchestration
+- 单机部署的微服务套件
+- 无容器编排的本地部署
 
 ---
 
-## Core Components
+## 核心组件
 
-### 1. Health Check Endpoint
+### 1. 健康检查端点
 
-Every service exposes a health endpoint:
+每个服务暴露健康检查接口：
 
 ```csharp
-// In Program.cs of each service
+// 每个服务的 Program.cs
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 ```
 
-### 2. Launcher Process
+### 2. 启动编排
 
-A separate console app that orchestrates startup:
+一个独立的控制台程序负责按顺序启动：
 
 ```csharp
 var services = new[]
 {
-    new ServiceConfig { Name = "API", Port = 5005, ExePath = "./Api/App", HealthUrl = "http://localhost:5005/health" },
-    new ServiceConfig { Name = "Web", Port = 5193, ExePath = "./Web/App", HealthUrl = "http://localhost:5193/health" },
+    new ServiceConfig { Name = "API",    Port = 5005, ExePath = "./Api/App", HealthUrl = "http://localhost:5005/health" },
+    new ServiceConfig { Name = "Web",    Port = 5193, ExePath = "./Web/App", HealthUrl = "http://localhost:5193/health" },
     new ServiceConfig { Name = "Reader", Port = 5100, ExePath = "./Reader/App", HealthUrl = "http://localhost:5100/health" },
 };
 
-// Step 1: Clean ports (kill stale processes)
+// 第1步：清理端口（杀掉残留进程）
 foreach (var svc in services)
     PortCleaner.EnsurePortFree(svc.Port);
 
-// Step 2: Start in dependency order
+// 第2步：按依赖顺序依次启动
 foreach (var svc in services)
 {
     var process = Process.Start(new ProcessStartInfo
@@ -53,16 +53,16 @@ foreach (var svc in services)
     });
     svc.Process = process;
 
-    // Wait for health check
+    // 等待健康检查通过
     await WaitForHealthy(svc.HealthUrl, timeout: TimeSpan.FromSeconds(30));
-    Console.WriteLine($"[OK] {svc.Name} healthy on :{svc.Port}");
+    Console.WriteLine($"[OK] {svc.Name} 已在 :{svc.Port} 启动");
 }
 ```
 
-### 3. Crash Recovery
+### 3. 崩溃恢复
 
 ```csharp
-// Monitor and auto-restart
+// 监控并自动重启
 _ = Task.Run(async () =>
 {
     while (!_shutdownToken.IsCancellationRequested)
@@ -71,13 +71,13 @@ _ = Task.Run(async () =>
         {
             if (svc.Process?.HasExited == true)
             {
-                // Save crash diagnostics
+                // 保存崩溃诊断信息
                 var crashLog = svc.RecentLogs.TakeLast(50);
                 File.WriteAllLines($"logs/crash-{svc.Name}-{DateTime.Now:yyyyMMddHHmmss}.log", crashLog);
 
                 if (svc.AutoRestart)
                 {
-                    Console.WriteLine($"[RESTART] {svc.Name}");
+                    Console.WriteLine($"[重启] {svc.Name}");
                     RestartService(svc);
                     await WaitForHealthy(svc.HealthUrl, TimeSpan.FromSeconds(30));
                 }
@@ -88,9 +88,9 @@ _ = Task.Run(async () =>
 });
 ```
 
-### 4. Health Dashboard (optional)
+### 4. 健康面板（可选）
 
-A built-in web UI showing service statuses with SSE (Server-Sent Events):
+内置 Web 界面，通过 SSE 实时显示服务状态：
 
 ```csharp
 app.MapGet("/dashboard/stream", async (HttpContext ctx) =>
@@ -105,34 +105,34 @@ app.MapGet("/dashboard/stream", async (HttpContext ctx) =>
 });
 ```
 
-### 5. Ready File (IPC)
+### 5. 就绪文件（进程间通信）
 
-After all services are healthy, write a `.ready` file that external scripts poll:
+所有服务健康后，写入 `.ready` 文件供外部脚本轮询：
 
 ```csharp
 File.WriteAllText(".ready", DateTime.UtcNow.ToString("O"));
-Console.WriteLine("[READY] All services running");
+Console.WriteLine("[就绪] 所有服务已启动");
 ```
 
 ---
 
-## Deployment Integration
+## 部署集成
 
-Kiosk/sh scripts poll for `.ready` before launching browsers:
+Kiosk/Shell 脚本轮询 `.ready` 后再启动浏览器：
 
 ```bash
 while [ ! -f .ready ]; do sleep 1; done
-echo "Services ready, launching browsers..."
+echo "服务已就绪，正在启动浏览器..."
 ```
 
 ---
 
-## Verification
+## 验证清单
 
-- [ ] Services start in correct dependency order
-- [ ] Each service validated via `/health` before next starts
-- [ ] Crashed services auto-restart (configurable)
-- [ ] Crash diagnostics saved (last N log lines + metadata)
-- [ ] Health dashboard shows real-time status
-- [ ] `.ready` file signals completion
-- [ ] Port conflicts cleaned before startup
+- [ ] 服务按依赖顺序启动
+- [ ] 每个服务通过 `/health` 验证后才启动下一个
+- [ ] 崩溃服务自动重启（可配置开关）
+- [ ] 崩溃时保存诊断日志（最后 N 行日志 + 进程元数据）
+- [ ] 健康面板显示实时状态
+- [ ] `.ready` 文件标记全部就绪
+- [ ] 端口冲突在启动前清理

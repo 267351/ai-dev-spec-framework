@@ -1,43 +1,43 @@
-# Coefficient Snapshot Pattern
+# 系数快照模式
 
-> **Category**: Coding / Data  
-> **Reusable**: ✅ Yes — copy to any project where historical records must be immune to config changes  
-> **Dependencies**: None (pure data design pattern)
-
----
-
-## When to Use
-
-Your system has business coefficients (prices, tax rates, exchange rates, material coefficients) that:
-- Change over time (updated by admin)
-- But historical records must reflect the value AT THE TIME of the transaction
-- Modifying current config must NOT retroactively change history
+> **分类**: 编码 / 数据  
+> **可复用**: ✅ 是 — 复制到任何历史记录需免疫配置变更的项目  
+> **依赖**: 无（纯数据设计模式）
 
 ---
 
-## Pattern
+## 适用场景
 
-**On record creation**: Copy the current coefficient value into the record as a snapshot field.
-**On coefficient update**: Only future records use the new value.
-**On history query**: Always use snapshot fields, never join to current config.
+系统中有业务系数（价格、税率、汇率、材质系数等），这些系数：
+- 会随时间变化（管理员可修改）
+- 但历史记录必须反映交易当时的数值
+- 修改当前配置不能追溯影响历史
 
 ---
 
-## Implementation
+## 模式
 
-### Entity Design
+**记录创建时**：将当前系数值复制到记录的快照字段中。  
+**系数更新后**：仅新记录使用新值。  
+**查询历史时**：始终使用快照字段，绝不联查当前配置。
+
+---
+
+## 实现
+
+### 实体设计
 
 ```csharp
-// Config table (mutable — admin can change)
+// 配置表（可变——管理员可修改）
 public class MaterialConfig
 {
     public int Id { get; set; }
     public string MaterialCode { get; set; }
-    public decimal SpecCoefficient { get; set; }   // Can change!
-    public decimal MaterialCoefficient { get; set; } // Can change!
+    public decimal SpecCoefficient { get; set; }     // 可变更！
+    public decimal MaterialCoefficient { get; set; } // 可变更！
 }
 
-// Transaction record (immutable — snapshot at creation time)
+// 交易记录（不可变——创建时快照）
 public class StockOut
 {
     public int Id { get; set; }
@@ -45,31 +45,31 @@ public class StockOut
     public int Quantity { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    // SNAPSHOT fields — copied from config at creation
+    // 快照字段——创建时从配置复制，写入后永不修改
     public decimal SpecCoefficientSnapshot { get; set; }
     public decimal MaterialCoefficientSnapshot { get; set; }
 
-    // Computed from snapshots (never from config!)
+    // 计算字段使用快照值（绝不用配置表！）
     public decimal EffectiveQuantity => Quantity * SpecCoefficientSnapshot * MaterialCoefficientSnapshot;
 }
 ```
 
-### Service Implementation
+### Service 实现
 
 ```csharp
 public async Task<StockOut> CreateStockOutAsync(string materialCode, int quantity)
 {
-    // Read current config
+    // 读取当前配置
     var config = await _db.MaterialConfigs
         .FirstAsync(m => m.MaterialCode == materialCode);
 
-    // Create record with SNAPSHOT values
+    // 创建记录时使用快照值
     var record = new StockOut
     {
         MaterialCode = materialCode,
         Quantity = quantity,
-        SpecCoefficientSnapshot = config.SpecCoefficient,      // Snapshot!
-        MaterialCoefficientSnapshot = config.MaterialCoefficient, // Snapshot!
+        SpecCoefficientSnapshot = config.SpecCoefficient,         // 快照！
+        MaterialCoefficientSnapshot = config.MaterialCoefficient, // 快照！
         CreatedAt = DateTime.UtcNow
     };
 
@@ -78,37 +78,37 @@ public async Task<StockOut> CreateStockOutAsync(string materialCode, int quantit
     return record;
 }
 
-// Later: admin changes config.SpecCoefficient from 1.5 → 1.8
-// Historical StockOut records still use 1.5 ← CORRECT
+// 之后：管理员将 config.SpecCoefficient 从 1.5 改成 1.8
+// 历史 StockOut 记录的快照值仍为 1.5 ← 正确！
 ```
 
 ---
 
-## Rules
+## 铁律
 
-1. **Snapshot fields are set ONCE at creation, never updated**
-2. **Computed values use snapshots, never join to config table**
-3. **Snapshot fields match config field names + "Snapshot" suffix**
-4. **Config changes NEVER require migration of historical records**
-
----
-
-## Common Use Cases
-
-| Domain | Config Field | Snapshot Field |
-|--------|-------------|----------------|
-| E-commerce | Product price | PriceSnapshot |
-| Finance | Exchange rate | ExchangeRateSnapshot |
-| Tax | Tax rate % | TaxRateSnapshot |
-| Manufacturing | Material coefficient | MaterialCoefficientSnapshot |
-| Logistics | Fuel surcharge % | FuelSurchargeSnapshot |
+1. **快照字段创建时设置一次，永不再修改**
+2. **计算值使用快照，绝不 JOIN 配置表**
+3. **快照字段命名 = 配置字段名 + "Snapshot" 后缀**
+4. **配置变更绝不要求历史数据迁移**
 
 ---
 
-## Verification
+## 常见应用场景
 
-- [ ] Transaction records have snapshot fields for each mutable config value
-- [ ] Snapshot values set at creation, never updated
-- [ ] Computed columns use snapshots (not config joins)
-- [ ] Config changes don't require history migration
-- [ ] Snapshot field names clearly distinguishable from config fields
+| 领域 | 配置字段 | 快照字段 |
+|------|---------|---------|
+| 电商 | ProductPrice | PriceSnapshot |
+| 金融 | ExchangeRate | ExchangeRateSnapshot |
+| 税务 | TaxRate | TaxRateSnapshot |
+| 制造 | MaterialCoefficient | MaterialCoefficientSnapshot |
+| 物流 | FuelSurcharge | FuelSurchargeSnapshot |
+
+---
+
+## 验证清单
+
+- [ ] 交易记录中每个可变配置值有对应快照字段
+- [ ] 快照值创建时设置，永不更新
+- [ ] 计算列使用快照值（不 JOIN 配置表）
+- [ ] 配置变更不触发历史数据迁移
+- [ ] 快照字段命名明显区别于配置字段
